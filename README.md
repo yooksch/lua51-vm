@@ -2,5 +2,5 @@
 
 A Lua 5.1 virtual machine written in Rust
 
->> [!NOTE]
+> [!WARNING]
 > VM functionality is not complete and the standard lua libraries are missing. I also haven't tested this extensively
