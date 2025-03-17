@@ -191,7 +191,11 @@ impl VirtualMachine {
                 },
                 // S[A] = concat S[B..C]
                 OpCode::Concat => {
-                    let v = stack[inst.B].borrow().clone().concat(stack[inst.C].borrow().clone())?.into();
+                    let mut v = stack[inst.B].clone();
+                    for i in inst.B+1..inst.C {
+                        let x = v.borrow().clone().concat(stack[i].borrow().clone())?.into();
+                        v = x;
+                    }
                     stack[inst.A] = v;
                 },
                 // PC += sBx
@@ -331,9 +335,9 @@ impl VirtualMachine {
                     let step = stack[inst.A + 2].borrow().clone();
 
                     let do_loop = if step >= 0f64.into() {
-                        index <= limit
+                        index < limit
                     } else {
-                        index >= limit
+                        index > limit
                     };
 
                     if do_loop {
