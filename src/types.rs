@@ -19,7 +19,8 @@ pub enum LuaError {
     ParseFloatError(std::num::ParseFloatError),
     ConstantNotFound(usize),
     UpValueNotFound(usize),
-    AttemptedCallOnUnsupportedType
+    AttemptedCallOnUnsupportedType,
+    ExpectedArgument
 }
 
 impl std::fmt::Display for LuaError {

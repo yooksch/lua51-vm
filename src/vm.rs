@@ -39,15 +39,12 @@ impl VirtualMachine {
         insert(libs::global::make());
     }
 
-    pub fn execute(&mut self, function: LuaPrototype, args: Option<Vec<Rc<RefCell<LuaValue>>>>, upvalues: Option<Vec<Rc<RefCell<LuaValue>>>>, vararg: Option<Vec<Rc<RefCell<LuaValue>>>>) -> LuaResult<Vec<Rc<RefCell<LuaValue>>>> {
+    pub fn execute(&mut self, function: LuaPrototype, args: Option<Vec<Rc<RefCell<LuaValue>>>>, upvalues: Option<Vec<Rc<RefCell<LuaValue>>>>) -> LuaResult<Vec<Rc<RefCell<LuaValue>>>> {
         let mut upvalues = match upvalues {
             Some(v) => v,
             None => Vec::new()
         };
-        let mut vararg = match vararg {
-            Some(v) => v,
-            None => Vec::new()
-        };
+        let mut vararg = Vec::new();
 
         let mut pc = 0i64;
         let mut stack: Vec<Rc<RefCell<LuaValue>>> = vec![Rc::new(RefCell::new(LuaValue::Nil)); 255];
@@ -420,7 +417,7 @@ impl VirtualMachine {
                     let mut new_vm = VirtualMachine::new();
                     new_vm.environment = self.environment.clone();
                     let func = lua_function!(move |args| {
-                        new_vm.execute(sub_func.clone(), Some(args.to_vec()), sub_upvalues.clone(), None)
+                        new_vm.execute(sub_func.clone(), Some(args.to_vec()), sub_upvalues.clone())
                     });
                     stack[inst.A] = LuaValue::Function(func).into();
                 },
