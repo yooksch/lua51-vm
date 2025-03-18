@@ -13,6 +13,7 @@ pub fn tostring(args: &LuaFunctionArgs) -> LuaFunctionReturn {
     }
 
     lua_return!(match &*args[0].borrow() {
+        LuaValue::String(s) => lua_string!(s).into(),
         LuaValue::Number(n) => lua_string!(format!("{}", n.0)).into(),
         a => lua_string!(format!("{:?}", a)).into()
     });

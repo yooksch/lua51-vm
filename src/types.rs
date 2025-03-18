@@ -2,6 +2,8 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::{Arc, Mutex}};
 
 use rand::RngCore;
 
+use crate::libs;
+
 #[derive(Debug)]
 pub enum LuaError {
     UnsupportedArithmeticOperation,
@@ -10,12 +12,14 @@ pub enum LuaError {
     AttemptedBooleanConcatenation,
     AttemptedFunctionConcatenation,
     AttemptedTableConcatenation,
+    AttemptedNilConcatenation,
     AttemptedIndexOfNonTable,
     AttemptedNotOperationOnNonBoolean,
     UnsupportedLengthOperation,
     ParseFloatError(std::num::ParseFloatError),
     ConstantNotFound(usize),
-    UpValueNotFound(usize)
+    UpValueNotFound(usize),
+    AttemptedCallOnUnsupportedType
 }
 
 impl std::fmt::Display for LuaError {
@@ -210,25 +214,70 @@ impl std::ops::Div for LuaValue {
 #[allow(unused)]
 impl LuaValue {
     pub fn modulo(self, rhs: Self) -> LuaResult<Self> {
-        todo!()
+        LuaResult::Ok(match (self, rhs) {
+            (LuaValue::Number(a), LuaValue::Number(b)) => LuaValue::Number((a.0 % b.0).into()),
+
+            (LuaValue::String(a), LuaValue::String(b)) => LuaValue::Number((a.parse::<f64>()? % b.parse::<f64>()?).into()),
+            (LuaValue::String(a), LuaValue::Number(b)) => LuaValue::Number((a.parse::<f64>()? % b.0).into()),
+            (LuaValue::Number(a), LuaValue::String(b)) => LuaValue::Number((a.0 % b.parse::<f64>()?).into()),
+
+            _ => return LuaResult::Err(LuaError::UnsupportedArithmeticOperation)
+        })
     }
 
     pub fn pow(self, rhs: Self) -> LuaResult<Self> {
-        todo!()
+        LuaResult::Ok(match (self, rhs) {
+            (LuaValue::Number(a), LuaValue::Number(b)) => LuaValue::Number((a.0.powf(b.0)).into()),
+
+            (LuaValue::String(a), LuaValue::String(b)) => LuaValue::Number((a.parse::<f64>()?.powf(b.parse::<f64>()?)).into()),
+            (LuaValue::String(a), LuaValue::Number(b)) => LuaValue::Number((a.parse::<f64>()?.powf(b.0)).into()),
+            (LuaValue::Number(a), LuaValue::String(b)) => LuaValue::Number((a.0.powf(b.parse::<f64>()?)).into()),
+
+            _ => return LuaResult::Err(LuaError::UnsupportedArithmeticOperation)
+        })
     }
 
     pub fn unm(self) -> LuaResult<Self> {
-        todo!()
+        match self {
+            LuaValue::Number(n) => LuaResult::Ok((-n.0).into()),
+            _ => LuaResult::Err(LuaError::UnsupportedArithmeticOperation)
+        }
     }
 
     pub fn concat(self, rhs: Self) -> LuaResult<Self> {
-        todo!()
+        match self {
+            LuaValue::String(s) => {
+                let mut lhs = s.clone();
+                let rhs = match libs::global::tostring(&vec![rhs.into()])?[0].borrow().clone() {
+                    LuaValue::String(s) => s,
+                    _ => panic!()
+                };
+                lhs.push_str(&rhs);
+                LuaResult::Ok(LuaValue::from(lhs))
+            },
+            LuaValue::Number(n) => {
+                let lhs = match libs::global::tostring(&vec![self.into()])?[0].borrow().clone() {
+                    LuaValue::String(s) => s,
+                    _ => panic!()
+                };
+                let rhs = match libs::global::tostring(&vec![rhs.into()])?[0].borrow().clone() {
+                    LuaValue::String(s) => s,
+                    _ => panic!()
+                };
+                LuaResult::Ok(LuaValue::String(format!("{lhs}{rhs}")))
+            },
+            LuaValue::Boolean(_) => LuaResult::Err(LuaError::AttemptedBooleanConcatenation),
+            LuaValue::Function(_) => LuaResult::Err(LuaError::AttemptedFunctionConcatenation),
+            LuaValue::Table(_) => LuaResult::Err(LuaError::AttemptedTableConcatenation),
+            LuaValue::Nil => LuaResult::Err(LuaError::AttemptedNilConcatenation)
+        }
     }
 
     pub fn call(self, args: Vec<Rc<RefCell<LuaValue>>>) -> LuaResult<Vec<Rc<RefCell<LuaValue>>>> {
         match self {
             LuaValue::Function(f) => f.invoke(&args),
-            _ => todo!()
+            LuaValue::Table(_) => LuaResult::Err(LuaError::AttemptedTableCall),
+            _ => LuaResult::Err(LuaError::AttemptedCallOnUnsupportedType)
         }
     }
 }

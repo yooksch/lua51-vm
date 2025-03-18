@@ -192,7 +192,7 @@ impl VirtualMachine {
                 // S[A] = concat S[B..C]
                 OpCode::Concat => {
                     let mut v = stack[inst.B].clone();
-                    for i in inst.B+1..inst.C {
+                    for i in inst.B+1..inst.C+1 {
                         let x = v.borrow().clone().concat(stack[i].borrow().clone())?.into();
                         v = x;
                     }
