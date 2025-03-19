@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
-use crate::{lua_function, lua_return, lua_string, lua_table, types::{LuaError, LuaFunctionArgs, LuaFunctionReturn, LuaResult, LuaValue}};
+use crate::{lua_function, lua_return, lua_string, lua_table, types::{LuaError, function::{LuaFunctionArgs, LuaFunctionReturn}, LuaResult, value::LuaValue}};
 
 pub fn print(args: &LuaFunctionArgs) -> LuaFunctionReturn {
     if args.len() > 0 {

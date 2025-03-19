@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::BTreeMap, ops::Sub, rc::Rc};
 
-use crate::{bytecode::{LuaPrototype, OpCode, FIELDS_PER_FLUSH}, libs, lua_function, types::{LuaError, LuaResult, LuaValue}};
+use crate::{bytecode::{LuaPrototype, OpCode, FIELDS_PER_FLUSH}, libs, lua_function, types::{LuaError, LuaResult, value::LuaValue}};
 
 // Simplify getting indexing the constants list or stack
 // B and C can be above 255 (max stack size) to indicate that they are referencing a constant

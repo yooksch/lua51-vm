@@ -5,7 +5,7 @@ use enum_map::{Enum, enum_map};
 use once_cell::sync::Lazy;
 use tokio::io::{AsyncRead, AsyncReadExt, BufReader};
 
-use crate::types::LuaValue;
+use crate::types::value::LuaValue;
 
 #[derive(Debug)]
 pub enum DecodeError {
