@@ -18,25 +18,29 @@ macro_rules! get_rk {
 }
 
 pub struct VirtualMachine {
-    pub environment: Rc<RefCell<BTreeMap<Rc<RefCell<LuaValue>>, Rc<RefCell<LuaValue>>>>>
+    pub environment: Rc<RefCell<LuaValue>>
 }
 
 impl VirtualMachine {
     pub fn new() -> Self {
         Self {
-            environment: Rc::new(RefCell::new(BTreeMap::new()))
+            environment: Rc::new(RefCell::new(BTreeMap::new().into()))
         }
     }
 
-    pub fn load_std_libraries(&mut self) {
+    pub fn load_std_libraries(&mut self) -> LuaResult<()> {
         // Merge the two maps, overwrite any pre-existing members
-        let insert = |t: BTreeMap<Rc<RefCell<LuaValue>>, Rc<RefCell<LuaValue>>>| {
+        let mut env = self.environment.borrow_mut();
+        let env_table = env.as_table_mut()?;
+        let mut insert = |t: BTreeMap<Rc<RefCell<LuaValue>>, Rc<RefCell<LuaValue>>>| {
             for (k, v) in t.iter() {
-                self.environment.borrow_mut().insert(k.clone(), v.clone());
+                env_table.insert(k.clone(), v.clone());
             }
         };
 
         insert(libs::global::make());
+
+        LuaResult::Ok(())
     }
 
     pub fn execute(&mut self, function: LuaPrototype, args: Option<Vec<Rc<RefCell<LuaValue>>>>, upvalues: Option<Vec<Rc<RefCell<LuaValue>>>>) -> LuaResult<Vec<Rc<RefCell<LuaValue>>>> {
@@ -108,7 +112,7 @@ impl VirtualMachine {
                         Some(n) => n,
                         None => return LuaResult::Err(LuaError::ConstantNotFound(inst.Bx))
                     };
-                    stack[inst.A] = match self.environment.borrow().get(name) {
+                    stack[inst.A] = match self.environment.borrow().as_table()?.get(name) {
                         Some(v) => v.clone(),
                         None => LuaValue::Nil.into()
                     };
@@ -119,7 +123,7 @@ impl VirtualMachine {
                         Some(n) => n,
                         None => return LuaResult::Err(LuaError::ConstantNotFound(inst.Bx))
                     };
-                    self.environment.borrow_mut().insert(name.clone(), stack[inst.A].clone());
+                    self.environment.borrow_mut().as_table_mut()?.insert(name.clone(), stack[inst.A].clone());
                 },
                 // S[A] = UV[B]
                 OpCode::GetUpValue => {
@@ -396,12 +400,12 @@ impl VirtualMachine {
 
                         // Init upvalues
                         for i in 0..sub_func.upvalue_count as usize {
-                            let pseudo = &instructions[(pc as usize) + i];
+                            let pseudo = &instructions[(pc as usize) + i + 1];
 
                             if matches!(pseudo.code, OpCode::Move) {
-                                sub_upvalues[i] = stack[pseudo.B].clone();
+                                sub_upvalues.push(stack[pseudo.B].clone());
                             } else if matches!(pseudo.code, OpCode::GetUpValue) {
-                                sub_upvalues[i] = upvalues[pseudo.B].clone();
+                                sub_upvalues.push(upvalues[pseudo.B].clone());
                             }
                         }
 

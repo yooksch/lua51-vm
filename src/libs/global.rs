@@ -6,10 +6,7 @@ pub fn print(args: &LuaFunctionArgs) -> LuaFunctionReturn {
     if args.len() > 0 {
         let mut s = "".to_owned();
         for arg in args {
-            let x = match tostring(&vec![arg.clone()])?[0].borrow().clone() {
-                LuaValue::String(s) => s,
-                _ => panic!()
-            };
+            let x = tostring(&vec![arg.clone()])?[0].borrow().as_string()?.to_owned();
             s.push_str(&x);
             s.push_str("\t");
         }

@@ -20,7 +20,12 @@ pub enum LuaError {
     ConstantNotFound(usize),
     UpValueNotFound(usize),
     AttemptedCallOnUnsupportedType,
-    ExpectedArgument
+    ExpectedArgument,
+    ExpectedNumber,
+    ExpectedString,
+    ExpectedBoolean,
+    ExpectedTable,
+    ExpectedFunction
 }
 
 impl std::fmt::Display for LuaError {
@@ -212,7 +217,6 @@ impl std::ops::Div for LuaValue {
     }
 }
 
-#[allow(unused)]
 impl LuaValue {
     pub fn modulo(self, rhs: Self) -> LuaResult<Self> {
         LuaResult::Ok(match (self, rhs) {
@@ -256,7 +260,7 @@ impl LuaValue {
                 lhs.push_str(&rhs);
                 LuaResult::Ok(LuaValue::from(lhs))
             },
-            LuaValue::Number(n) => {
+            LuaValue::Number(_n) => {
                 let lhs = match libs::global::tostring(&vec![self.into()])?[0].borrow().clone() {
                     LuaValue::String(s) => s,
                     _ => panic!()
@@ -275,10 +279,53 @@ impl LuaValue {
     }
 
     pub fn call(self, args: Vec<Rc<RefCell<LuaValue>>>) -> LuaResult<Vec<Rc<RefCell<LuaValue>>>> {
+        dbg!(&args);
         match self {
             LuaValue::Function(f) => f.invoke(&args),
             LuaValue::Table(_) => LuaResult::Err(LuaError::AttemptedTableCall),
             _ => LuaResult::Err(LuaError::AttemptedCallOnUnsupportedType)
+        }
+    }
+
+    pub fn as_f64<'a>(&'a self) -> LuaResult<&'a f64> {
+        match self {
+            LuaValue::Number(n) => LuaResult::Ok(&n.0),
+            _ => LuaResult::Err(LuaError::ExpectedNumber)
+        }
+    }
+
+    pub fn as_string<'a>(&'a self) -> LuaResult<&'a String> {
+        match self {
+            LuaValue::String(s) => LuaResult::Ok(s),
+            _ => LuaResult::Err(LuaError::ExpectedString)
+        }
+    }
+
+    pub fn as_bool<'a>(&'a self) -> LuaResult<&'a bool> {
+        match self {
+            LuaValue::Boolean(b) => LuaResult::Ok(b),
+            _ => LuaResult::Err(LuaError::ExpectedBoolean)
+        }
+    }
+
+    pub fn as_table<'a>(&'a self) -> LuaResult<&'a BTreeMap<Rc<RefCell<LuaValue>>, Rc<RefCell<LuaValue>>>> {
+        match self {
+            LuaValue::Table(t) => LuaResult::Ok(t),
+            _ => LuaResult::Err(LuaError::ExpectedTable)
+        }
+    }
+
+    pub fn as_table_mut<'a>(&'a mut self) -> LuaResult<&'a mut BTreeMap<Rc<RefCell<LuaValue>>, Rc<RefCell<LuaValue>>>> {
+        match self {
+            LuaValue::Table(t) => LuaResult::Ok(t),
+            _ => LuaResult::Err(LuaError::ExpectedTable)
+        }
+    }
+
+    pub fn as_function<'a>(&'a self) -> LuaResult<&'a LuaFunction> {
+        match self {
+            LuaValue::Function(f) => LuaResult::Ok(f),
+            _ => LuaResult::Err(LuaError::ExpectedFunction)
         }
     }
 }

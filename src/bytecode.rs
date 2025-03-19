@@ -334,12 +334,12 @@ async fn read_function<R: AsyncRead + Unpin>(header: &LuaHeader, reader: &mut Bu
         let constant_type = reader.read_u8().await?;
 
         match constant_type {
-            0 => function.constants.push(Rc::new(RefCell::new(LuaValue::Nil))),
-            1 => function.constants.push(Rc::new(RefCell::new((reader.read_u8().await? == 1).into()))),
-            3 => function.constants.push(Rc::new(RefCell::new(read_lua_number(header, reader).await?.into()))),
+            0 => function.constants.push(LuaValue::Nil.into()),
+            1 => function.constants.push(LuaValue::from(reader.read_u8().await? == 1).into()),
+            3 => function.constants.push(LuaValue::from(read_lua_number(header, reader).await?).into()),
             4 => {
                 let length = read_u64(header, header.size_t_size, reader).await? as usize;
-                function.constants.push(Rc::new(RefCell::new(read_string(length, reader).await?.into())));
+                function.constants.push(LuaValue::from(read_string(length, reader).await?).into());
             },
             _ => {}
         };
