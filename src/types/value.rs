@@ -183,7 +183,6 @@ impl LuaValue {
     }
 
     pub fn call(self, args: Vec<Rc<RefCell<LuaValue>>>) -> LuaResult<Vec<Rc<RefCell<LuaValue>>>> {
-        dbg!(&args);
         match self {
             LuaValue::Function(f) => f.invoke(&args),
             LuaValue::Table(_) => LuaResult::Err(LuaError::AttemptedTableCall),

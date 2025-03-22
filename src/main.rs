@@ -10,5 +10,5 @@ async fn main() {
     let mut vm = VirtualMachine::new();
     vm.load_std_libraries().unwrap();
     let r = vm.execute(f.unwrap(), None, None);
-    dbg!(&r);
+    print!("{}", r);
 }
